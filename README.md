@@ -1,6 +1,7 @@
 # 3S-experiment
 三年生の前期実験で行った発展課題のソースコードを載せていきます。  
 ## doremi.c  
+#### ドレミを生成する。  
 ファイルをコンパイルします。  
 ```bash  
 clang doremi.c -o doremi  
