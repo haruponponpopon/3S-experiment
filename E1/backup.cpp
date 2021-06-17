@@ -73,13 +73,13 @@ double calc_a(double E,double p){
     return a;
 }
 
-/*配列の中の最大値を返す*/
-double max_num_in_array(vector<double>& arr){
-    double max = arr.at(0);
+/*配列の中の最小値を返す*/
+double min_num_in_array(vector<double>& arr){
+    double min = arr.at(0);
     for (int i=1; i<(int)arr.size(); i++){
-        if (max<arr.at(i)) max = arr.at(i);
+        if (min>arr.at(i)) min = arr.at(i);
     }
-    return max;
+    return min;
 }
 
 void write_file(const vector<double>& x, const vector<double>& y, const string& file_name){
@@ -91,33 +91,45 @@ void write_file(const vector<double>& x, const vector<double>& y, const string& 
     for (int i=0; i<(int)x.size(); i++){
         file_out << x.at(i) << " " << y.at(i) << endl;
     }
+    cout << "file write succeeded." << endl;
 }
 
 int main(){
     int plot_size = 100;
     vector<vector<double>> data = read_file("data1.csv");
-    vector<double> pascal = log_space(-1, 2, plot_size);
+    vector<double> pascal = log_space(-1.15, 4, plot_size);
     double max_no = data[(int)data.size()-1][0]; //ファイルの最大のNo(電気力線の本数)
     vector<double> V;
 
     /*計算する*/
     for (double p : pascal){ //pに関するfor文
-        vector<double> K_array; //各電気力線でもとまったKの値を入れる
+        vector<double> V_array; //各電気力線でもとまったKの値を入れる
         int data_index = 0; //data配列のどこを見ているか
         for (int i=1; i<=max_no; i++){ //各電気力線に関するfor文
-            data_index++;
-            double K = 0;
-            while (data_index<(int)data.size() && data[data_index][0]==i){
-                double avg_E = (data[data_index][3]+data[data_index-1][3])*1000/2;
-                double r = sqrt((data[data_index][1]-data[data_index-1][1])*(data[data_index][1]-data[data_index-1][1])+
-                (data[data_index][2]-data[data_index-1][2])*(data[data_index][2]-data[data_index-1][2]));
-                double a = calc_a(avg_E, p);
-                K += a*r;
-                data_index++;
+            /*にぶたん*/
+            double left = 0;
+            double right = 1E10;
+            double V;
+            int index;
+            while (right-left > 0.001){
+                index = data_index+1;
+                V = (right+left)/2;  //今回の候補となるV
+                double K = 0;
+                while (index<(int)data.size() && data[index][0]==i){
+                    double avg_E = (data[index][3]+data[index-1][3])*1000/2;
+                    double r = sqrt((data[index][1]-data[index-1][1])*(data[index][1]-data[index-1][1])+
+                    (data[index][2]-data[index-1][2])*(data[index][2]-data[index-1][2]));
+                    double a = calc_a(V*avg_E, p);
+                    K += a*r;
+                    index++;
+                }
+                if (K>4.5) right = V;
+                else left = V;
             }
-            K_array.push_back(K);
+            V_array.push_back(V);
+            data_index = index;
         }
-        V.push_back(10/(max_num_in_array(K_array)*2));
+        V.push_back(min_num_in_array(V_array));
     }
 
     write_file(pascal, V, "ans1.txt");
