@@ -114,7 +114,7 @@ void bandpass2(complex double * y, long min, long max, long n, long fs){
   }
 }
 
-void bandpass3(complex double * y, long min, long max, long n, long fs){
+void bandpass3(complex double * y, long min, long max, long n, long fs, int move){
   for(int i=0; i<n; i++){
     if(i*fs/n < min || i*fs/n > max){
         y[i]=0;
@@ -123,12 +123,24 @@ void bandpass3(complex double * y, long min, long max, long n, long fs){
         y[i]*=5;
     }
   }
-  for (int i=0; i<n; i++){
-      if (i*fs/n >= min && i*fs/n <= max){
-          if (i-3<n&&i-3>=0) {
-            y[i-3]=y[i];
+  if (move>0){
+      for (int i=n/2-1; i>=0; i--){
+          if (i*fs/n >= min && i*fs/n <= max){
+            if (i+move<n/2&&i+move>=0) {
+                y[i+move]=y[i];
+                y[i]=0;
+            }
           }
       }
+  }else{
+    for (int i=0; i<n/2; i++){
+        if (i*fs/n >= min && i*fs/n <= max){
+            if (i+move<n/2&&i+move>=0) {
+                y[i+move]=y[i];
+                y[i]=0;
+            }
+        }
+    }
   }
 }
 
@@ -162,7 +174,7 @@ int main(int argc, char** argv){
   sample_t * buf = calloc(sizeof(sample_t), n);
   complex double * X = calloc(sizeof(complex double), n);
   complex double * Y = calloc(sizeof(complex double), n);
-  if(argc == 2){
+  if(argc == 3){
     int ss = socket(PF_INET, SOCK_STREAM, 0);
     if(ss == -1){perror("socket");exit(1);}
     struct sockaddr_in addr;
@@ -189,7 +201,7 @@ int main(int argc, char** argv){
       if(r == 0){break;}
       sample_to_complex(buf, X, n);
       fft(X, Y, n);
-      bandpass3(Y, 10, 10000, n, 44100);
+      bandpass3(Y, 10, 10000, n, 44100, atoi(argv[2]));
       // pitch(Y, n, 1.5);
     //   pitch(Y,n,1.1);
       ifft(Y, X, n);
@@ -206,7 +218,7 @@ int main(int argc, char** argv){
     pclose(wp);
     close(s);
   }
-  if(argc==3){
+  if(argc==4){
     int s = socket(PF_INET, SOCK_STREAM, 0);
     if(s == -1){perror("socket");exit(1);}
     struct sockaddr_in addr;
@@ -231,7 +243,7 @@ int main(int argc, char** argv){
       if(r == 0){break;}
       sample_to_complex(buf, X, n);
       fft(X, Y, n);
-      bandpass3(Y, 10, 10000, n, 44100);
+      bandpass3(Y, 10, 10000, n, 44100, atoi(argv[3]));
       // pitch(Y, n, 1.5);
     //   pitch(Y,n,1.1);
       ifft(Y, X, n);
